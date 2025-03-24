@@ -16,3 +16,4 @@ ipykernel
 google-generativeai
 zhipuai
 ollama
+cozepy
