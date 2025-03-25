@@ -9,22 +9,15 @@ from queue import Empty
 from threading import Thread
 
 from wcferry import Wcf, WxMsg
-from base.func_coze_test import CozeTest
+from base.func_coze import Coze
 from base.func_chengyu import cy
 from base.func_weather import Weather
 from base.func_news import News
 
 from job_mgmt import Job
 
-# from base.old_func.func_bard import BardAssistant
-# from base.old_func.func_chatglm import ChatGLM
-# from base.old_func.func_ollama import Ollama
-# from base.old_func.func_tigerbot import TigerBot
-# from base.old_func.func_xinghuo_web import XinghuoWeb
-# from config.constants import ChatType
-# from base.old_func.func_zhipu import ZhiPu
-
 __version__ = "39.2.4.0"
+__core__ = "0.1"
 
 
 class Robot(Job):
@@ -35,49 +28,33 @@ class Robot(Job):
         self.wcf = wcf
         self.config = config
         self.LOG = logging.getLogger("Robot")
-        self.wxid = self.wcf.get_self_wxid()
-        self.allContacts = self.getAllContacts()
+        
+        self.params_init()
+        
+        self.wxid = None
+        self.allContacts = None
+        self.chat = None
+        self.vx_data_init()
+        
         self._msg_timestamps = []
 
-        self.chat = CozeTest(self.config.CHATGPT)
-        
-        # if ChatType.is_in_chat_types(chat_type):
-        #     if chat_type == ChatType.TIGER_BOT.value and TigerBot.value_check(self.config.TIGERBOT):
-        #         self.chat = TigerBot(self.config.TIGERBOT)
-        #     elif chat_type == ChatType.CHATGPT.value and ChatGPT.value_check(self.config.CHATGPT):
-        #         self.chat = ChatGPT(self.config.CHATGPT)
-        #     elif chat_type == ChatType.XINGHUO_WEB.value and XinghuoWeb.value_check(self.config.XINGHUO_WEB):
-        #         self.chat = XinghuoWeb(self.config.XINGHUO_WEB)
-        #     elif chat_type == ChatType.CHATGLM.value and ChatGLM.value_check(self.config.CHATGLM):
-        #         self.chat = ChatGLM(self.config.CHATGLM)
-        #     elif chat_type == ChatType.BardAssistant.value and BardAssistant.value_check(self.config.BardAssistant):
-        #         self.chat = BardAssistant(self.config.BardAssistant)
-        #     elif chat_type == ChatType.ZhiPu.value and ZhiPu.value_check(self.config.ZhiPu):
-        #         self.chat = ZhiPu(self.config.ZhiPu)
-        #     elif chat_type == ChatType.OLLAMA.value and Ollama.value_check(self.config.OLLAMA):
-        #         self.chat = Ollama(self.config.OLLAMA)
-        #     else:
-        #         self.LOG.warning("未配置模型")
-        #         self.chat = None
-        # else:
-        #     if TigerBot.value_check(self.config.TIGERBOT):
-        #         self.chat = TigerBot(self.config.TIGERBOT)
-        #     elif ChatGPT.value_check(self.config.CHATGPT):
-        #         self.chat = ChatGPT(self.config.CHATGPT)
-        #     elif Ollama.value_check(self.config.OLLAMA):
-        #         self.chat = Ollama(self.config.OLLAMA)
-        #     elif XinghuoWeb.value_check(self.config.XINGHUO_WEB):
-        #         self.chat = XinghuoWeb(self.config.XINGHUO_WEB)
-        #     elif ChatGLM.value_check(self.config.CHATGLM):
-        #         self.chat = ChatGLM(self.config.CHATGLM)
-        #     elif BardAssistant.value_check(self.config.BardAssistant):
-        #         self.chat = BardAssistant(self.config.BardAssistant)
-        #     elif ZhiPu.value_check(self.config.ZhiPu):
-        #         self.chat = ZhiPu(self.config.ZhiPu)
-        #     else:
-        #         self.LOG.warning("未配置模型")
-        #         self.chat = None
 
+    def params_init(self):
+        self.CITY_CODE = self.config.get_config_by_key("weather")["city_code"]
+        self.WEATHER = self.config.get_config_by_key("weather")["receivers"]
+        self.GROUPS = self.config.get_config_by_key("groups")["enable"]
+        self.NEWS = self.config.get_config_by_key("news")["receivers"]
+        self.REPORT_REMINDERS = self.config.get_config_by_key("report_reminder")["receivers"]
+        
+        self.SEND_RATE_LIMIT = self.config.get_config_by_key("send_rate_limit", 0)
+
+    def vx_data_init(self):
+            # 用户id或群聊id
+            self.wxid = self.wcf.get_self_wxid()
+            self.allContacts = self.getAllContacts()
+    
+    def coze_init(self):
+        self.chat = Coze(self.config.get_config_by_key("coze"))
         self.LOG.info(f"已选择: {self.chat}")
 
     @staticmethod

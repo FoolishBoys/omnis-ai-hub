@@ -1,17 +1,29 @@
-#! /usr/bin/env python3
-# -*- coding: utf-8 -*-
+'''
+File Created: Monday, 24th March 2025 9:46:13 am
+Author: Csy (1391023795@qq.com)
+Description: 
+'''
+
+import logging.config
+from config.logc import log_config
+# 初始化日志配置
+logging.config.dictConfig(log_config)
+logger = logging.getLogger()
 
 import signal
-from argparse import ArgumentParser
-
-from base.func_report_reminder import ReportReminder
 from config.configuration import Config
+from argparse import ArgumentParser
+from base.func_report_reminder import ReportReminder
 from config.constants import ChatType
-from robot.robot import Robot, __version__
+from robot.robot import Robot, __core__
 from wcferry import Wcf
 
+
 def main(chat_type: int):
+    
+    
     config = Config()
+    
     wcf = Wcf(debug=True)
 
     def handler(sig, frame):
@@ -21,7 +33,7 @@ def main(chat_type: int):
     signal.signal(signal.SIGINT, handler)
 
     robot = Robot(config, wcf, chat_type)
-    robot.LOG.info(f"WeChatRobot【{__version__}】成功启动···")
+    robot.LOG.info(f"Omnis Ai Hub >>【{__core__}】成功启动···")
 
     # 机器人启动发送测试消息
     robot.sendTextMsg("机器人启动成功！", "filehelper")

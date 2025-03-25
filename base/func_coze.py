@@ -3,32 +3,41 @@
 
 import logging
 from datetime import datetime
+import os
+import time
 
 import httpx
-from cozepy import Coze, TokenAuth, Message, COZE_CN_BASE_URL
+from cozepy import COZE_CN_BASE_URL, COZE_COM_BASE_URL
+from cozepy import Coze, TokenAuth, Message, ChatStatus, MessageContentType  
 
 
-class CozeTest():
+class Coze():
+    """_summary_
+    Authentication: pat_Jxxx
+    Area: cn
+    bot: 
+    - botid: 123
+      botname: 123
+    - botid: 1234
+      botname: 1234
+    """
+
     def __init__(self, conf: dict) -> None:
-        key = conf.get("key")
-        # Todo: 1.国外使用
-        api = COZE_CN_BASE_URL
-        # proxy = conf.get("proxy")
-        prompt = conf.get("prompt")
-        # Todo: 2.model改为选填
-        self.model = conf.get("model")
-        self.LOG = logging.getLogger("CozeTest")
+        self.LOG = logging.getLogger("Coze")
+        self.auth = conf.get("Authentication")
+        self.api = COZE_CN_BASE_URL if conf.get("Area") in COZE_CN_BASE_URL else COZE_COM_BASE_URL
+        # Todo: 2.bot改字典
+        self.bot_list = conf.get("bot")
         
         # 初始化Coze客户端
-        self.client = Coze(auth=TokenAuth(token=key), base_url=api)
+        self.client = Coze(auth=TokenAuth(token=self.auth), base_url=self.api)
             
         self.conversation_list = {}
-        self.system_content_msg = {"role": "system", "content": prompt}
 
     def __repr__(self):
-        return 'CozeTest'
+        return 'Coze'
 
-    def get_answer(self, question: str, wxid: str) -> str:
+    def get_answer(self, question: str, wxid: str, bot_id) -> str:
         # wxid或者roomid,个人时为微信id，群消息时为群id
         self.updateMessage(wxid, question, "user")
         rsp = ""
@@ -38,14 +47,20 @@ class CozeTest():
             
             # 调用Coze API
             chat_poll = self.client.chat.create_and_poll(
-                bot_id=self.model,  # 使用model作为bot_id
+                bot_id=bot_id,  # 使用model作为bot_id
                 user_id=wxid,
                 additional_messages=[
-                    Message.build_user_question_text(msg["content"]) if msg["role"] == "user" 
-                    else Message.build_assistant_answer(msg["content"]) 
-                    for msg in messages[1:]
-                ]  # 跳过system消息
+                    Message.build_user_question_text("Hello?123"),
+                ]  
             )
+            '''
+                for message in chat_poll.messages:
+                     print(message.content, end="", flush=True)
+
+                if chat_poll.chat.status == ChatStatus.COMPLETED:
+                    print()
+                    print("token usage:", chat_poll.chat.usage.token_count)
+            '''
             
             # 获取回复
             if chat_poll.chat.status == "completed":
@@ -98,11 +113,11 @@ class CozeTest():
 
 if __name__ == "__main__":
     from config.configuration import Config
-    config = Config().CHATGPT
+    config = Config()
     if not config:
         exit(0)
 
-    chat = CozeTest(config)
+    chat = Coze(config.get_config_by_key("coze"))
 
     while True:
         q = input(">>> ")
