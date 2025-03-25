@@ -49,8 +49,11 @@ class CozeClient():
             
             # concatenated_content = "".join(message.content for message in chat_poll.messages)
             for message in chat_poll.messages:
-                 self.LOG.error(f"=============返回消息内容：{message.content}")
-                 concatenated_content+=message.content
+                self.LOG.error(f"=============返回消息内容：{message.content}")
+                if "generate_answer_finish" in message.content:
+                    break
+                concatenated_content+=message.content
+                
             
             self.LOG.error(f"=============完整消息内容：{concatenated_content}")
                  

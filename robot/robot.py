@@ -44,7 +44,7 @@ class Robot(Job):
 
     def params_init(self):
         # self.WEATHER = self.config.get_config_by_key("weather")["receivers"]
-        # self.GROUPS = self.config.get_config_by_key("groups")["enable"]
+        self.GROUPS = self.config.get_config_by_key("groups")["enable"]
         # self.NEWS = self.config.get_config_by_key("news")["receivers"]
         # self.REPORT_REMINDERS = self.config.get_config_by_key("report_reminder")["receivers"]
         
@@ -100,7 +100,7 @@ class Robot(Job):
         # 群聊消息
         if msg.from_group():
             # 如果在群里被 @
-            if msg.roomid not in self.config.GROUPS:  # 不在配置的响应的群列表里，忽略
+            if msg.roomid not in self.GROUPS:  # 不在配置的响应的群列表里，忽略
                 return
 
             if msg.is_at(self.wxid):  # 被@
