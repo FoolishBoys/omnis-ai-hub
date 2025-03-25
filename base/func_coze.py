@@ -3,12 +3,10 @@
 
 import logging
 from datetime import datetime
-import os
-import time
 
 import httpx
-from cozepy import COZE_CN_BASE_URL, COZE_COM_BASE_URL
-from cozepy import Coze, TokenAuth, Message, ChatStatus, MessageContentType  
+from cozepy import COZE_CN_BASE_URL, COZE_COM_BASE_URL, MessageRole
+from cozepy import Coze, TokenAuth, Message, ChatStatus  
 
 
 class Coze():
@@ -39,69 +37,55 @@ class Coze():
 
     def get_answer(self, question: str, wxid: str, bot_id) -> str:
         # wxid或者roomid,个人时为微信id，群消息时为群id
-        self.updateMessage(wxid, question, "user")
+        self.updateMessage(wxid, question, MessageRole.USER)
         rsp = ""
         try:
-            # 构建消息列表
-            messages = self.conversation_list[wxid]
-            
             # 调用Coze API
             chat_poll = self.client.chat.create_and_poll(
-                bot_id=bot_id,  # 使用model作为bot_id
+                bot_id="7485651387741765666",  # 使用model作为bot_id
                 user_id=wxid,
-                additional_messages=[
-                    Message.build_user_question_text("Hello?123"),
-                ]  
+                additional_messages=self.conversation_list[wxid]
             )
-            '''
-                for message in chat_poll.messages:
-                     print(message.content, end="", flush=True)
 
-                if chat_poll.chat.status == ChatStatus.COMPLETED:
-                    print()
-                    print("token usage:", chat_poll.chat.usage.token_count)
-            '''
+            # concatenated_content = "".join(message.content for message in chat_poll.messages)
+            for message in chat_poll.messages:
+                 self.LOG.error(f"=============返回消息内容：{message.content}")
+                 concatenated_content+=message.content
             
-            # 获取回复
-            if chat_poll.chat.status == "completed":
-                for message in chat_poll.messages:
-                    if message.role == "assistant" and message.type == "answer":
-                        rsp = message.content
-                        break
-                
-                if not rsp:
-                    rsp = "抱歉，我现在无法回答这个问题。"
-            else:
-                rsp = "抱歉，服务暂时不可用，请稍后再试。"
-                
-            rsp = rsp[2:] if rsp.startswith("\n\n") else rsp
-            rsp = rsp.replace("\n\n", "\n")
-            self.updateMessage(wxid, rsp, "assistant")
+            self.LOG.error(f"=============完整消息内容：{concatenated_content}")
+                 
+            if chat_poll.chat.status == ChatStatus.COMPLETED:
+                self.LOG.error(f"=============本次token：{chat_poll.chat.usage.token_count}")
             
-        except Exception as e0:
-            self.LOG.error(f"发生未知错误：{str(e0)}")
-            rsp = "抱歉，发生了一些错误，请稍后再试。"
+            self.updateMessage(wxid, concatenated_content, MessageRole.ASSISTANT)
+            
+        except Exception as e:
+            self.LOG.error(f"获取coze回信时，发生未知错误：{str(e)}")
+            concatenated_content = "抱歉，获取coze回信时，发生了一些错误，请稍后再试（机器人回复）"
 
-        return rsp
+        return concatenated_content
 
     # Todo: 4.通用代码 更新消息记录
-    def updateMessage(self, wxid: str, question: str, role: str) -> None:
+    def updateMessage(self, wxid: str, content: str, role) -> None:
         now_time = str(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 
         # time_mk = "当需要回答时间时请直接参考回复:"
         # 初始化聊天记录,组装系统信息
         if wxid not in self.conversation_list.keys():
-            question_ = [
-                self.system_content_msg,
-                # {"role": "system", "content": "" + time_mk + now_time}
-            ]
-            self.conversation_list[wxid] = question_
+            
+            self.conversation_list[wxid] = []
 
         # 当前问题
-        self.conversation_list[wxid].append(
-            {"role": role, "content": question}
-        )
+        if role == MessageRole.USER:
+            self.conversation_list[wxid].append(
+                Message.build_user_question_text(content)
+            )
+        else:
+            self.conversation_list[wxid].append(
+                Message.build_assistant_answer(content)
+            )
 
+        self.LOG.error(f"==========更新消息后的消息列表：{self.conversation_list[wxid]}")
         # 只存储10条记录，超过滚动清除
         i = len(self.conversation_list[wxid])
         # Todo: 3.记忆空间由配置调整
