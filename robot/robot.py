@@ -100,8 +100,8 @@ class Robot(Job):
         # 群聊消息
         if msg.from_group():
             # 如果在群里被 @
-            if msg.roomid not in self.GROUPS:  # 不在配置的响应的群列表里，忽略
-                return
+            # if msg.roomid not in self.GROUPS:  # TODO: 不在配置的响应的群列表里，忽略
+            #     return
 
             if msg.is_at(self.wxid):  # 被@
                 self.toAt(msg)
