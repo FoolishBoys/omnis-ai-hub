@@ -6,7 +6,7 @@ logger = logging.getLogger()
 def load_yaml(file_path) -> dict:
     try:
         logger.warning(f"Yaml file read: {file_path}")
-        with open(file_path, 'r') as file:
+        with open(file_path, 'r', encoding="utf-8") as file:
             return yaml.safe_load(file)
     except FileNotFoundError:
         logger.error(f"Yaml file not found: {file_path}")

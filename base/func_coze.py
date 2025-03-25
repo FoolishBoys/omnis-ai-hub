@@ -9,7 +9,7 @@ from cozepy import COZE_CN_BASE_URL, COZE_COM_BASE_URL, MessageRole
 from cozepy import Coze, TokenAuth, Message, ChatStatus  
 
 
-class Coze():
+class CozeClient():
     """_summary_
     Authentication: pat_Jxxx
     Area: cn
@@ -22,23 +22,22 @@ class Coze():
 
     def __init__(self, conf: dict) -> None:
         self.LOG = logging.getLogger("Coze")
-        self.auth = conf.get("Authentication")
         self.api = COZE_CN_BASE_URL if conf.get("Area") in COZE_CN_BASE_URL else COZE_COM_BASE_URL
         # Todo: 2.bot改字典
         self.bot_list = conf.get("bot")
         
         # 初始化Coze客户端
-        self.client = Coze(auth=TokenAuth(token=self.auth), base_url=self.api)
+        self.client = Coze(auth=TokenAuth(token=conf.get("Authentication")), base_url=self.api)
             
         self.conversation_list = {}
 
     def __repr__(self):
-        return 'Coze'
+        return 'CozeClient'
 
-    def get_answer(self, question: str, wxid: str, bot_id) -> str:
+    def get_answer(self, question: str, wxid: str, bot_id=None) -> str:
         # wxid或者roomid,个人时为微信id，群消息时为群id
         self.updateMessage(wxid, question, MessageRole.USER)
-        rsp = ""
+        concatenated_content = ""
         try:
             # 调用Coze API
             chat_poll = self.client.chat.create_and_poll(
@@ -47,6 +46,7 @@ class Coze():
                 additional_messages=self.conversation_list[wxid]
             )
 
+            
             # concatenated_content = "".join(message.content for message in chat_poll.messages)
             for message in chat_poll.messages:
                  self.LOG.error(f"=============返回消息内容：{message.content}")
@@ -101,7 +101,7 @@ if __name__ == "__main__":
     if not config:
         exit(0)
 
-    chat = Coze(config.get_config_by_key("coze"))
+    chat = CozeClient(config.get_config_by_key("coze"))
 
     while True:
         q = input(">>> ")

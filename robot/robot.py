@@ -7,11 +7,10 @@ import time
 
 from queue import Empty
 from threading import Thread
+import xml.etree.ElementTree as ET
 
 from wcferry import Wcf, WxMsg
-from base.func_coze import Coze
-from robot.bot_funcs.friend.new_friend_hi import sayHiToNewFriend
-from robot.bot_funcs.friend.auto_acpt_friend import autoAcceptFriendRequest
+from base.func_coze import CozeClient
 
 from base.func_chengyu import cy
 from base.func_weather import Weather
@@ -22,8 +21,8 @@ __version__ = "39.2.4.0"
 __core__ = "0.1"
 
 
-# class Robot(Job):
-class Robot:
+class Robot(Job):
+# class Robot:
     """个性化自己的机器人
     """
 
@@ -44,11 +43,10 @@ class Robot:
 
 
     def params_init(self):
-        self.CITY_CODE = self.config.get_config_by_key("weather")["city_code"]
-        self.WEATHER = self.config.get_config_by_key("weather")["receivers"]
-        self.GROUPS = self.config.get_config_by_key("groups")["enable"]
-        self.NEWS = self.config.get_config_by_key("news")["receivers"]
-        self.REPORT_REMINDERS = self.config.get_config_by_key("report_reminder")["receivers"]
+        # self.WEATHER = self.config.get_config_by_key("weather")["receivers"]
+        # self.GROUPS = self.config.get_config_by_key("groups")["enable"]
+        # self.NEWS = self.config.get_config_by_key("news")["receivers"]
+        # self.REPORT_REMINDERS = self.config.get_config_by_key("report_reminder")["receivers"]
         
         self.SEND_RATE_LIMIT = self.config.get_config_by_key("send_rate_limit", 0)
 
@@ -58,7 +56,7 @@ class Robot:
             self.allContacts = self.getAllContacts()
     
     def coze_init(self):
-        self.chat = Coze(self.config.get_config_by_key("coze"))
+        self.chat = CozeClient(self.config.get_config_by_key("coze"))
         self.LOG.info(f"已选择: {self.chat}")
 
     def toAt(self, msg: WxMsg) -> bool:
@@ -112,10 +110,10 @@ class Robot:
 
         # 非群聊信息，按消息类型进行处理
         if msg.type == 37:  # 好友请求
-            autoAcceptFriendRequest(self, msg)
+            self.autoAcceptFriendRequest(msg)
 
         elif msg.type == 10000:  # 系统信息
-            sayHiToNewFriend(self, msg)
+            self.sayHiToNewFriend(msg)
 
         elif msg.type == 0x01:  # 文本消息
             # 让配置加载更灵活，自己可以更新配置。也可以利用定时任务更新。
@@ -158,11 +156,11 @@ class Robot:
         # 随机延迟0.3-1.3秒，并且一分钟内发送限制
         time.sleep(float(str(time.time()).split('.')[-1][-2:]) / 100.0 + 0.3)
         now = time.time()
-        if self.config.SEND_RATE_LIMIT > 0:
+        if self.SEND_RATE_LIMIT > 0:
             # 清除超过1分钟的记录
             self._msg_timestamps = [t for t in self._msg_timestamps if now - t < 60]
-            if len(self._msg_timestamps) >= self.config.SEND_RATE_LIMIT:
-                self.LOG.warning("发送消息过快，已达到每分钟"+self.config.SEND_RATE_LIMIT+"条上限。")
+            if len(self._msg_timestamps) >= self.SEND_RATE_LIMIT:
+                self.LOG.warning("发送消息过快，已达到每分钟"+self.SEND_RATE_LIMIT+"条上限。")
                 return
             self._msg_timestamps.append(now)
 
@@ -201,6 +199,23 @@ class Robot:
         while True:
             self.runPendingJobs()
             time.sleep(1)
+
+    def autoAcceptFriendRequest(self, msg: WxMsg) -> None:
+        try:
+            xml = ET.fromstring(msg.content)
+            v3 = xml.attrib["encryptusername"]
+            v4 = xml.attrib["ticket"]
+            scene = int(xml.attrib["scene"])
+            self.wcf.accept_new_friend(v3, v4, scene)
+        except Exception as e:
+            self.LOG.error(f"同意好友出错：{e}")
+
+    def sayHiToNewFriend(self, msg: WxMsg) -> None:
+        nickName = re.findall(r"你已添加了(.*)，现在可以开始聊天了。", msg.content)
+        if nickName:
+            # 添加了好友，更新好友列表
+            self.allContacts[msg.sender] = nickName[0]
+            self.sendTextMsg(f"Hi {nickName[0]}，我自动通过了你的好友请求。", msg.sender)
 
     # def newsReport(self) -> None:
     #     receivers = self.config.NEWS
