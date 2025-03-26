@@ -51,7 +51,7 @@ class CozeClient():
                 self.LOG.error(f"=============返回消息内容：{message.content}")
                 # {"xxx"}这个模式的需要忽略
                 if message.content.startswith("{\"") and message.content.endswith("\"}"):
-                    break
+                    continue
                 concatenated_content+=message.content
             
             concatenated_content = f"{concatenated_content}\nconversation_id: {chat_poll.chat.conversation_id}"
