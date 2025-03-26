@@ -46,15 +46,16 @@ class CozeClient():
                 additional_messages=self.conversation_list[wxid]
             )
 
-            
             # concatenated_content = "".join(message.content for message in chat_poll.messages)
             for message in chat_poll.messages:
                 self.LOG.error(f"=============返回消息内容：{message.content}")
-                if "generate_answer_finish" in message.content:
+                # {"xxx"}这个模式的需要忽略
+                if message.content.startswith("{\"") and message.content.endswith("\"}"):
                     break
                 concatenated_content+=message.content
-                
             
+            concatenated_content = f"{concatenated_content}\nconversation_id: {chat_poll.chat.conversation_id}"
+                
             self.LOG.error(f"=============完整消息内容：{concatenated_content}")
                  
             if chat_poll.chat.status == ChatStatus.COMPLETED:
