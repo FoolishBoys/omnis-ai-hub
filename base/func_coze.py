@@ -50,7 +50,7 @@ class CozeClient():
             for message in chat_poll.messages:
                 self.LOG.error(f"=============返回消息内容：{message.content}")
                 # {"xxx"}这个模式的需要忽略
-                if message.content.startswith("{\"") and message.content.endswith("\"}"):
+                if message.content.startswith("{") and message.content.endswith("}"):
                     continue
                 concatenated_content+=message.content
             
