@@ -54,6 +54,7 @@ class Robot(Job):
             # 用户id或群聊id
             self.wxid = self.wcf.get_self_wxid()
             self.allContacts = self.getAllContacts()
+            self.LOG.error(f"{self.wcf.get_msg_types()}")
     
     def coze_init(self):
         self.chat = CozeClient(self.config.get_config_by_key("coze"))
