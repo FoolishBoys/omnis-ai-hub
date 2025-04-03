@@ -9,7 +9,7 @@ from types import GenericAlias
 from typing import Annotated, get_origin
 
 from base.chatglm.comfyUI_api import ComfyUIApi
-from base.func_news import News
+from base.old_func.func_news import News
 from zhdate import ZhDate
 
 _TOOL_HOOKS = {}

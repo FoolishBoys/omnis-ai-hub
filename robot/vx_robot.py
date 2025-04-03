@@ -9,27 +9,27 @@ from queue import Empty
 from threading import Thread
 import xml.etree.ElementTree as ET
 
-from wcferry import Wcf, WxMsg
+from wcferry import Wcf
+from base.wechatferry_plugin import WxMsg_impl
 from base.func_coze import CozeClient
 
-from base.func_chengyu import cy
-from base.func_weather import Weather
-from base.func_news import News
+from base.old_func.func_chengyu import cy
+from base.old_func.func_weather import Weather
+from base.old_func.func_news import News
 from job_mgmt import Job
 
 __version__ = "39.2.4.0"
 __core__ = "0.1"
 
 
-class Robot(Job):
-# class Robot:
+class VX_Robot(Job):
     """个性化自己的机器人
     """
 
     def __init__(self, config: Config, wcf: Wcf, chat_type: int) -> None:
         self.wcf = wcf
         self.config = config
-        self.LOG = logging.getLogger("Robot")
+        self.LOG = logging.getLogger("VX_Robot")
         
         self.params_init()
         
@@ -60,14 +60,14 @@ class Robot(Job):
         self.chat = CozeClient(self.config.get_config_by_key("coze"))
         self.LOG.info(f"已选择: {self.chat}")
 
-    def toAt(self, msg: WxMsg) -> bool:
+    def toAt(self, msg: WxMsg_impl) -> bool:
         """处理被 @ 消息
         :param msg: 微信消息结构
         :return: 处理状态，`True` 成功，`False` 失败
         """
         return self.toChitchat(msg)
 
-    def toChitchat(self, msg: WxMsg) -> bool:
+    def toChitchat(self, msg: WxMsg_impl) -> bool:
         """闲聊，接入 ChatGPT
         """
         if not self.chat:  # 没接
@@ -89,7 +89,7 @@ class Robot(Job):
             self.LOG.error(f"===========toChitchat闲聊出现问题")
             return False
 
-    def processMsg(self, msg: WxMsg) -> None:
+    def processMsg(self, msg: WxMsg_impl) -> None:
         """当接收到消息的时候，会调用本方法。如果不实现本方法，则打印原始消息。
         此处可进行自定义发送的内容,如通过 msg.content 关键字自动获取当前天气信息，并发送到对应的群组@发送者
         群号：msg.roomid  微信ID：msg.sender  消息内容：msg.content
@@ -121,7 +121,7 @@ class Robot(Job):
             if not msg.from_self():
                 self.toChitchat(msg)  # 闲聊
 
-    def onMsg(self, msg: WxMsg) -> int:
+    def onMsg(self, msg: WxMsg_impl) -> int:
         try:
             self.LOG.error(msg)  # 打印信息
             self.processMsg(msg)
@@ -201,22 +201,22 @@ class Robot(Job):
             self.runPendingJobs()
             time.sleep(1)
 
-    def autoAcceptFriendRequest(self, msg: WxMsg) -> None:
-        try:
-            xml = ET.fromstring(msg.content)
-            v3 = xml.attrib["encryptusername"]
-            v4 = xml.attrib["ticket"]
-            scene = int(xml.attrib["scene"])
-            self.wcf.accept_new_friend(v3, v4, scene)
-        except Exception as e:
-            self.LOG.error(f"同意好友出错：{e}")
+    # def autoAcceptFriendRequest(self, msg: WxMsg_impl) -> None:
+    #     try:
+    #         xml = ET.fromstring(msg.content)
+    #         v3 = xml.attrib["encryptusername"]
+    #         v4 = xml.attrib["ticket"]
+    #         scene = int(xml.attrib["scene"])
+    #         self.wcf.accept_new_friend(v3, v4, scene)
+    #     except Exception as e:
+    #         self.LOG.error(f"同意好友出错：{e}")
 
-    def sayHiToNewFriend(self, msg: WxMsg) -> None:
-        nickName = re.findall(r"你已添加了(.*)，现在可以开始聊天了。", msg.content)
-        if nickName:
-            # 添加了好友，更新好友列表
-            self.allContacts[msg.sender] = nickName[0]
-            self.sendTextMsg(f"Hi {nickName[0]}，我自动通过了你的好友请求。", msg.sender)
+    # def sayHiToNewFriend(self, msg: WxMsg_impl) -> None:
+    #     nickName = re.findall(r"你已添加了(.*)，现在可以开始聊天了。", msg.content)
+    #     if nickName:
+    #         # 添加了好友，更新好友列表
+    #         self.allContacts[msg.sender] = nickName[0]
+    #         self.sendTextMsg(f"Hi {nickName[0]}，我自动通过了你的好友请求。", msg.sender)
 
     # def newsReport(self) -> None:
     #     receivers = self.config.NEWS
@@ -237,7 +237,7 @@ class Robot(Job):
     #     for r in receivers:
     #         self.sendTextMsg(report, r)
 
-        # def toChengyu(self, msg: WxMsg) -> bool:
+        # def toChengyu(self, msg: WxMsg_impl) -> bool:
     
     #     """
     #     处理成语查询/接龙消息
