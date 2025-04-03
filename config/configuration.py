@@ -22,6 +22,8 @@ class Config:
     
     def _load_config(self) -> dict:
         self._settings = load_yaml(os.path.join(os.path.abspath(__file__), "..", "config.yaml"))
+        # 添加omnis根目录
+        self._settings['ProjRootPath'] = os.path.join(os.path.abspath(__file__), "..", "..")
     
     def get_all_config(self) -> dict:
         return self._settings

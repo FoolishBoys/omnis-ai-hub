@@ -13,7 +13,8 @@ logger = logging.getLogger()
 import signal
 from config.configuration import Config
 from argparse import ArgumentParser
-from config.constants import ChatType
+from robot.core.chat_type import ChatType
+
 from robot.vx_robot import VX_Robot, __core__
 from wcferry import Wcf
 
@@ -40,7 +41,7 @@ def main(chat_type: int):
     vxrobot.sendTextMsg("Omnis Ai Hub机器人启动成功！", "filehelper")
 
     # 接收消息
-    # vxrobot.enableRecvMsg()     # 可能会丢消息？
+    # vxrobot.()     # 可能会丢消息？
     vxrobot.enableReceivingMsg()  # 加队列
 
     # # 每天 7 点发送天气预报
